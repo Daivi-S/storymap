@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Built, but for whom?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Public+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a calm, data-desk feature story about one city; plain and exact.
+   IDEA: the City's white-and-blue development notice sign that goes up on every condo site.
+   PICTURE: original census-tract maps, one interactive explorer.
+   COLOUR and TYPE: white ground, deep "notice-sign" blue, orange for missing residents, violet for need; Archivo + Public Sans.
+   LAYOUT: one reading column, each visual packaged the same way: number, headline, figure, context, finding, source. */
+:root{color-scheme:light dark;
+ --bg:light-dark(#ffffff,#10161f);--panel:light-dark(#f3f5f8,#18212d);--ink:light-dark(#0b1320,#e9edf2);--muted:light-dark(#4b5566,#a9b3c1);
+ --rule:light-dark(#dde2e9,#2a3545);--blue:light-dark(#184f95,#86b6ef);--sign:#184f95;--orange:light-dark(#b7461c,#f19a6b);--violet:light-dark(#4a3aa7,#b4aaf0)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Public Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;line-height:1.08;text-wrap:balance;margin:0}
+a{color:var(--blue)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 max(4vw,16px)}
+.read{max-width:68ch}
+header.hero{background:var(--sign);color:#fff;padding:clamp(28px,5vw,64px) 0 clamp(24px,4vw,48px)}
+.hero .tag{display:inline-block;border:2px solid #fff;padding:2px 10px;font:700 14px Archivo,sans-serif;margin-bottom:18px}
+.hero h1{font-size:clamp(34px,5.4vw,56px);font-weight:800;max-width:22ch}
+.hero p.dek{font-size:clamp(17px,2vw,20px);max-width:60ch;margin:18px 0 0;color:#dbe7f7}
+.hero .by{margin-top:14px;font-size:14px;color:#b9cdea}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:2px;margin-top:28px;background:#ffffff33}
+.stat{background:var(--sign);padding:16px 18px 14px 0}
+.stat b{display:block;font:800 clamp(30px,4vw,42px)/1 Archivo,sans-serif}
+.stat span{font-size:14.5px;color:#dbe7f7}
+nav.toc{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--rule)}
+nav.toc .wrap{display:flex;gap:4px 18px;overflow-x:auto;padding-block:10px;font:600 14px Archivo,sans-serif;white-space:nowrap}
+nav.toc a{margin-right:14px;text-decoration:none;color:var(--muted);padding:6px 0}nav.toc a:hover{color:var(--ink)}
+@media(max-width:900px){nav.toc{position:static}}
+section.chap{padding:clamp(36px,5vw,64px) 0;border-bottom:1px solid var(--rule)}
+.num{font:800 15px Archivo,sans-serif;color:var(--blue)}
+section.chap h2{font-size:clamp(26px,3.4vw,36px);margin:6px 0 18px}
+figure{margin:0 0 20px}
+figure img{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:4px;background:#fff}
+figcaption,.src{font-size:13.5px;color:var(--muted);margin-top:8px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+@media(max-width:760px){.cols{grid-template-columns:minmax(0,1fr)}}
+.cols h3{font-size:15px;margin-bottom:6px;color:var(--muted)}
+.cols p{margin:0 0 10px}
+.finding{border-left:4px solid var(--blue);background:var(--panel);padding:12px 16px;margin:18px 0 0;font-weight:600}
+.f-orange{border-color:var(--orange)}.f-violet{border-color:var(--violet)}
+/* explorer */
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.tools button{min-height:44px;padding:8px 14px;border:1.5px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:6px;font:600 15px Archivo,sans-serif;cursor:pointer}
+.tools button[aria-pressed=true]{background:var(--sign);border-color:var(--sign);color:#fff}
+.tools button:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.mapbox{position:relative;height:min(68vh,560px);min-height:340px;background:var(--panel);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.mapbox svg{position:absolute;inset:0;width:100%;height:100%}
+.mapbox path.t{stroke:var(--bg);stroke-width:.4}.mapbox path.t:hover{stroke:var(--ink);stroke-width:1.6}
+.mapbox path.home{fill:none;stroke:var(--ink);stroke-width:2.4;pointer-events:none}
+.tip{position:absolute;pointer-events:none;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font-size:13.5px;line-height:1.4;box-shadow:0 4px 14px #0003;display:none;max-width:240px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13.5px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:-2px;margin-right:5px}
+.note{font-size:13.5px;color:var(--muted)}
+ul.next li{margin-bottom:8px}
+footer{padding:36px 0 56px;font-size:14px;color:var(--muted)}
+footer h2{font-size:20px;color:var(--ink);margin-bottom:10px}
+footer li{margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+ <div class="wrap">
+  <span class="tag">Notice: development story</span>
+  <h1>Built, but for whom? Toronto's condo boom and the renters it leaves out</h1>
+  <p class="dek">Between 2016 and 2021 Toronto added tens of thousands of homes, almost all of them in a few clusters of new towers. This story map asks where that growth landed, who actually lives in the new units, and whether it reached the renters who need housing most.</p>
+  <p class="by">A story map by Daivi Shah · GGR377 Urban Data Analytics, University of Toronto · Fall 2026</p>
+  <div class="stats">
+   <div class="stat"><b>2.3%</b><span>population growth for the City of Toronto, 2016 to 2021</span></div>
+   <div class="stat"><b>27 tracts</b><span>grew by 30% or more, on just 2.6% of the city's land</span></div>
+   <div class="stat"><b>332 of 585</b><span>census tracts lost population over the same five years</span></div>
+  </div>
+ </div>
+</header>
+
+<nav class="toc" aria-label="Sections"><div class="wrap">
+ <a href="#growth">1. Where the city grew</a><a href="#missing">2. Missing residents</a><a href="#need">3. Renters in need</a><a href="#corridor">4. Downtown corridor</a><a href="#mismatch">5. The mismatch</a><a href="#home">6. Bay-Cloverhill</a><a href="#explore">Explore the map</a><a href="#next">What next</a>
+</div></nav>
+
+<main>
+<section class="chap" id="growth"><div class="wrap">
+ <div class="num">Visual 1 · Original map</div>
+ <h2>Toronto barely grew, except where the cranes were</h2>
+ <figure><img src="map1_growth.png" alt="Choropleth map of Toronto census tracts by population change 2016 to 2021. Most tracts lost population or grew under 5%; the darkest tracts, 30% growth or more, cluster downtown, on the waterfront and at a few suburban nodes." loading="lazy" width="1650" height="1230">
+ <figcaption>Map created by author. Source: Statistics Canada, 2021 Census of Population; 2016 counts re-allocated to 2021 tract boundaries with the Canadian Longitudinal Tract Database.</figcaption></figure>
+ <div class="cols">
+  <div><h3>Context</h3><p>Toronto's population rose only 2.3% between the 2016 and 2021 censuses, and more than half of the city's 585 census tracts actually lost people. The last year of that period overlaps with the start of the pandemic, so some of the losses reflect temporary moves out of the city.</p></div>
+  <div><h3>What the map shows</h3><p>The dark blue tracts tell a different story. Downtown, the waterfront (CityPlace, East Bayfront, Humber Bay Shores) and suburban transit nodes such as Yonge-Eglinton, Yorkdale and Etobicoke City Centre grew by a third or more. These are the places where new condominium towers were completed during these years.</p></div>
+ </div>
+ <p class="finding">The 27 tracts that grew by 30% or more gained about 55,600 residents. That equals 88% of the whole city's net growth, on 2.6% of its land.</p>
+</div></section>
+
+<section class="chap" id="missing"><div class="wrap">
+ <div class="num">Visual 2 · Original map</div>
+ <h2>New towers, missing residents</h2>
+ <figure><img src="map2_not_usual_residents.png" alt="Choropleth map of the share of private dwellings not occupied by usual residents in 2021. The highest shares, 15% or more, are concentrated downtown around Bay Street and the waterfront." loading="lazy" width="1650" height="1230">
+ <figcaption>Map created by author. Source: Statistics Canada, 2021 Census; total private dwellings minus dwellings occupied by usual residents.</figcaption></figure>
+ <div class="cols">
+  <div><h3>Context</h3><p>The census counts every private dwelling, and separately counts the ones where someone usually lives. The gap between the two includes units that were empty on census day, second homes or pied-à-terres, units used by temporary residents, and units rented out short-term. It is the best free, city-wide signal we have of homes that are built but not lived in full-time.</p></div>
+  <div><h3>What the map shows</h3><p>Across Toronto, 7.4% of dwellings were not occupied by usual residents. In the core the figure often passes 15%, and it is highest exactly where Map 1 shows the most growth. In the 27 fastest-growing tracts combined it is 13.5%, almost double the city rate.</p></div>
+ </div>
+ <p class="finding f-orange">A large slice of the condo boom is investor-owned or part-time housing. New supply downtown does not translate one-for-one into new homes for people who live here.</p>
+</div></section>
+
+<section class="chap" id="need"><div class="wrap">
+ <div class="num">Visual 3 · Original map</div>
+ <h2>Renters struggle most far from the towers</h2>
+ <figure><img src="map3_renter_core_need.png" alt="Choropleth map of the share of renter households in core housing need in 2021. The darkest tracts, 35% or more, are in the inner suburbs of Scarborough, North York and Etobicoke, while downtown tracts are mostly under 20%." loading="lazy" width="1650" height="1230">
+ <figcaption>Map created by author. Source: Statistics Canada, 2021 Census; renter core housing need rates by tract compiled by the School of Cities (University of Toronto), Essential Spaces project.</figcaption></figure>
+ <div class="cols">
+  <div><h3>Context</h3><p>A household is in <em>core housing need</em> when its home is unaffordable (shelter costs of 30% or more of income), overcrowded, or needs major repairs, and it could not afford a suitable local alternative. City-wide, 29.3% of renter households were in core housing need in 2021.</p></div>
+  <div><h3>What the map shows</h3><p>The pattern almost flips Map 1. The deepest need is in the inner suburbs, in older rental apartment towers in places like Weston, Mount Dennis, Jane and Finch (Glenfield-Jane Heights), Thorncliffe Park and much of Scarborough. Downtown condo tracts are mostly lighter. One caution: student households are excluded from the core need measure, which lowers the rates around the universities.</p></div>
+ </div>
+ <p class="finding f-violet">The renters in the deepest housing need live in the parts of the city that the condo boom mostly skipped.</p>
+</div></section>
+
+<section class="chap" id="corridor"><div class="wrap">
+ <div class="num">Visual 4 · Original map</div>
+ <h2>Zooming in: the downtown condo corridor</h2>
+ <figure><img src="map4_downtown_zoom.png" alt="Close-up map of downtown Toronto population change. A continuous spine of dark blue tracts runs north from the waterfront along Yonge and Bay Streets to Bay-Cloverhill and Church-Wellesley, with King West and Regent Park also above 30%." loading="lazy" width="1650" height="1230">
+ <figcaption>Map created by author. Source: Statistics Canada, 2021 Census; Canadian Longitudinal Tract Database.</figcaption></figure>
+ <div class="cols">
+  <div><h3>Context</h3><p>Zoomed in, the growth forms a spine: from the waterfront, north along the Yonge and Bay corridors to Wellesley Street, plus King West and Regent Park, where the public housing redevelopment added mixed-income towers. These areas sit on Line 1 of the subway and are designated for growth (Downtown and Centres) in the City's Official Plan.</p></div>
+  <div><h3>What the map shows</h3><p>Even inside downtown, the change is sharply uneven. A few blocks away, five of the Annex's six tracts, full of Victorian houses, lost population, and Cabbagetown and Kensington-Chinatown barely changed. Growth was steered into a handful of tracts where towers are allowed, while low-rise neighbourhoods next door stayed closed to new housing.</p></div>
+ </div>
+ <p class="finding">Toronto's growth is not spread out; it is poured into a narrow corridor. That makes these few tracts a natural lab for asking who new housing serves.</p>
+</div></section>
+
+<section class="chap" id="mismatch"><div class="wrap">
+ <div class="num">Visual 5 · Original chart</div>
+ <h2>The mismatch, in one chart</h2>
+ <figure><img src="chart1_need_by_growth.png" alt="Two bar charts by tract growth group. Left: median share of renters in core housing need falls from about 29 to 31% in slow or shrinking tracts to 24.7% and 22.8% in the two fastest-growing groups. Right: median share of dwellings not occupied by usual residents rises from about 5% to 11.4% in the fastest-growing group." loading="lazy" width="1800" height="840">
+ <figcaption>Chart created by author. Each bar is the median across tracts in that growth group (331, 147, 50, 27 and 27 tracts).</figcaption></figure>
+ <div class="cols">
+  <div><h3>Context</h3><p>To test what the maps suggest, I grouped all 582 tracts with reliable data by how fast they grew, then compared the typical (median) tract in each group. Medians are used so a few unusual tracts do not drive the result.</p></div>
+  <div><h3>What the chart shows</h3><p>In tracts that shrank or grew slowly, the typical rate of renter core need is about 30%. In tracts that grew 15% or more it drops to 23 to 25%, while the share of dwellings without usual residents more than doubles. The tract-level correlation is weak across the whole city (Spearman ρ = −0.06), so the difference is concentrated in the boom tracts, not a smooth city-wide trend.</p></div>
+ </div>
+ <p class="finding">Where Toronto built the most, renters were less likely to be in need and units were more likely to sit without a full-time resident.</p>
+</div></section>
+
+<section class="chap" id="home"><div class="wrap">
+ <div class="num">Visual 6 · Original chart</div>
+ <h2>Bay-Cloverhill: a condo-boom tract up close</h2>
+ <figure><img src="chart2_bay_cloverhill_vs_city.png" alt="Paired horizontal bar chart comparing Bay-Cloverhill census tract with the City of Toronto. Population growth 48.7% vs 2.3%; dwellings built 2016 to 2021 39.0% vs 7.3%; households that rent 66.8% vs 48.1%; dwellings not occupied by usual residents 17.2% vs 7.4%; renters paying 30% or more on shelter 62.5% vs 40.0%; renters in core housing need 17.0% vs 29.3%." loading="lazy" width="1800" height="960">
+ <figcaption>Chart created by author. Source: Statistics Canada, 2021 Census Profile for CT 5350062.04 and Toronto (C). Bases: population; occupied dwellings; private households; private dwellings; renter households (two bars).</figcaption></figure>
+ <div class="cols">
+  <div><h3>Context</h3><p>I live at Bay and Wellesley, in census tract 0062.04 (Bay-Cloverhill). Almost every home here (99%) is in an apartment building of five or more storeys, and 39% of the tract's dwellings were finished between 2016 and 2021. Its population jumped 48.7% in five years.</p></div>
+  <div><h3>What the chart shows</h3><p>Two-thirds of households rent, and 62.5% of renters spend 30% or more of their income on housing, well above the city's 40%. Median rent was $1,980 a month against $1,500 city-wide. Yet only 17% of renters count as in core housing need, because so many are students (who are excluded) or young professionals whose incomes are high enough to pass the test.</p></div>
+ </div>
+ <p class="finding">From the street, the boom looks like abundance. In the data, it is a neighbourhood of stretched renters paying premium rents, with one in six units not home to anyone full-time.</p>
+</div></section>
+
+<section class="chap" id="explore"><div class="wrap">
+ <div class="num">Visual 7 · Original interactive map</div>
+ <h2>Explore it yourself</h2>
+ <p class="read">Switch between the three measures and hover or tap any census tract to see its numbers. The black outline is Bay-Cloverhill.</p>
+ <div class="tools" role="group" aria-label="Choose a measure">
+  <button type="button" data-k="g" aria-pressed="true">Population change</button>
+  <button type="button" data-k="u" aria-pressed="false">Not occupied by usual residents</button>
+  <button type="button" data-k="c" aria-pressed="false">Renters in core housing need</button>
+ </div>
+ <div class="mapbox" id="mapbox"><svg id="map" role="img" aria-label="Interactive map of Toronto census tracts"></svg><div class="tip" id="tip"></div></div>
+ <div class="legend" id="legend"></div>
+ <p class="src">Map created by author (D3.js). Source: Statistics Canada, 2021 Census of Population; Canadian Longitudinal Tract Database (2016 population); School of Cities, University of Toronto (renter core housing need). Tracts with fewer than 100 residents (or 50 dwellings) are left blank.</p>
+</div></section>
+
+<section class="chap" id="next"><div class="wrap read">
+ <div class="num">Takeaways</div>
+ <h2>What this means, and where the project goes next</h2>
+ <ul class="next">
+  <li><strong>Growth is concentrated.</strong> Toronto's new housing went into a narrow set of tower-zoned tracts, while most of the city lost people.</li>
+  <li><strong>Supply is not the same as homes.</strong> In boom tracts, roughly one unit in seven or eight is not lived in by a usual resident, about twice the city rate.</li>
+  <li><strong>Need lives elsewhere.</strong> Renters in deep housing need are concentrated in inner-suburban rental towers, which saw little new construction.</li>
+  <li><strong>Even boom renters are stretched.</strong> In Bay-Cloverhill most renters pay 30% or more of income on rent, so new condos are not cheap housing for those who live in them.</li>
+ </ul>
+ <p>For Assignment 3 I will move from describing this pattern to explaining it: modelling where new building permits and development applications go, using local demographics and built-environment characteristics (transit access, zoning, existing density) as predictors, and adding rental listing data to see who the new units actually house.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap read">
+ <h2>Data, methods and AI use</h2>
+ <ul>
+  <li><strong>2021 census tract data</strong> (population, dwellings, households): Statistics Canada, 2021 Census of Population, via CensusMapper extracts.</li>
+  <li><strong>2016 population on 2021 boundaries:</strong> Canadian Longitudinal Tract Database (J. Allen and Z. Taylor), area- and population-weighted re-allocation, so growth is compared on identical geography.</li>
+  <li><strong>Renter core housing need by tract:</strong> 2021 Census, as compiled by the School of Cities, University of Toronto (Essential Spaces project). Checked against the official profile for CT 0062.04 (17.0%).</li>
+  <li><strong>Bay-Cloverhill and city figures:</strong> Statistics Canada 2021 Census Profiles for CT 5350062.04 and Toronto (C).</li>
+  <li><strong>Boundaries:</strong> 2021 census tracts; City of Toronto ward boundaries (Toronto Open Data). All maps use NAD83 / UTM zone 17N; classes are fixed breaks chosen to be easy to read.</li>
+  <li><strong>Limits:</strong> census day (May 2021) fell during the pandemic, when some downtown residents had temporarily left, which inflates both population loss and unoccupied units. Tract-level patterns describe places, not individual households.</li>
+  <li><strong>AI use:</strong> As permitted in GGR377, I used Claude (Anthropic) to help process the data, draft the Python code for the maps and charts, and build this web page. I chose the topic and data, and reviewed and edited the analysis and text.</li>
+ </ul>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+{
+const svg=document.getElementById('map'),box=document.getElementById('mapbox'),tip=document.getElementById('tip'),leg=document.getElementById('legend');
+const M={
+ g:{name:'Population change, 2016 to 2021',breaks:[0,5,15,30],labels:['Lost population','0 to 5%','5 to 15%','15 to 30%','30% or more'],cols:['#ecebe7','#b7d3f6','#6da7ec','#2a78d6','#184f95']},
+ u:{name:'Dwellings not occupied by usual residents',breaks:[4,7,10,15],labels:['Under 4%','4 to 7%','7 to 10%','10 to 15%','15% or more'],cols:['#fde3d3','#f6b48f','#eb6834','#b7461c','#7a2c0e']},
+ c:{name:'Renters in core housing need',breaks:[20,25,30,35],labels:['Under 20%','20 to 25%','25 to 30%','30 to 35%','35% or more'],cols:['#e4e0fa','#b4aaf0','#8274e2','#6250d6','#3a2c9a']}
+};
+let key='g',data=null;
+const cls=(v,m)=>{if(v==null)return null;let i=0;while(i<m.breaks.length&&v>=m.breaks[i])i++;return i};
+const fmt=v=>v==null?'not reported':(v>0&&key==='g'?'+':'')+v.toFixed(1)+'%';
+function legend(){const m=M[key];leg.innerHTML=m.labels.map((l,i)=>`<span><i style="background:${m.cols[i]}"></i>${l}</span>`).join('')+'<span><i style="background:transparent;border:1px dashed #999"></i>Not reported</span><span><i style="background:transparent;border:2px solid currentColor"></i>Bay-Cloverhill</span>'}
+function draw(){
+ if(!data)return;const W=box.clientWidth,H=box.clientHeight,m=M[key];
+ const proj=d3.geoMercator().fitExtent([[10,10],[W-10,H-10]],data),path=d3.geoPath(proj);
+ const sel=d3.select(svg);sel.selectAll('*').remove();
+ const g=sel.append('g');
+ g.selectAll('path.t').data(data.features).join('path').attr('class','t').attr('d',path)
+  .attr('fill',d=>{const c=cls(d.properties[key],m);return c==null?'transparent':m.cols[c]})
+  .on('pointermove',(e,d)=>{const p=d.properties,r=box.getBoundingClientRect();
+   tip.innerHTML=`<strong>${p.n}</strong><br>Tract ${p.ct} · ${p.p.toLocaleString()} residents<br>Population change: ${p.g==null?'not reported':(p.g>0?'+':'')+p.g.toFixed(1)+'%'}<br>Not occupied by usual residents: ${p.u==null?'not reported':p.u.toFixed(1)+'%'}<br>Renters in core need: ${p.c==null?'not reported':p.c.toFixed(1)+'%'}`;
+   tip.style.display='block';let x=e.clientX-r.left+14,y=e.clientY-r.top+14;if(x+250>W)x=e.clientX-r.left-254;if(y+130>H)y=e.clientY-r.top-134;tip.style.left=x+'px';tip.style.top=y+'px'})
+  .on('pointerleave',()=>tip.style.display='none');
+ const home=data.features.filter(f=>f.properties.ct==='0062.04');
+ g.selectAll('path.home').data(home).join('path').attr('class','home').attr('d',path);
+ sel.call(d3.zoom().scaleExtent([1,12]).on('zoom',e=>g.attr('transform',e.transform)));
+}
+document.querySelectorAll('.tools button').forEach(b=>b.addEventListener('click',()=>{key=b.dataset.k;document.querySelectorAll('.tools button').forEach(x=>x.setAttribute('aria-pressed',x===b));legend();draw()}));
+legend();
+fetch('tracts.json').then(r=>r.json()).then(j=>{data=j;draw();const ro=new ResizeObserver(draw);ro.observe(box)}).catch(()=>{box.innerHTML='<p class="note" style="padding:16px">The interactive map could not load. Visuals 1 to 3 above show the same data.</p>'});
+}
+</script>
+</body>
+</html>
